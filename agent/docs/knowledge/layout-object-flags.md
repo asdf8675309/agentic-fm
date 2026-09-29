@@ -40,7 +40,7 @@ These bits have no XML counterpart to check against, so they are decoded from th
 
 ## How much of this was checked in FileMaker
 
-Four anchor values were compared against the Inspector, one object each: `0x70000000` (left, top, right), `0x90000000` (left, bottom), `0xB0000000` (left, top, bottom), and `0xF0000000` (all four). All four match the "set means anchored" reading and contradict the "don't anchor" reading. These are the values the checked solution uses for objects that are not left and top only. Other combinations follow from the same bits but were not seen there.
+Four anchor values were compared against the Inspector, one object each: `0x70000000` (left, top, right), `0x90000000` (left, bottom), `0xB0000000` (left, top, bottom), and `0xF0000000` (all four). All four match the "set means anchored" reading and contradict the "don't anchor" reading. Together they cover 90 of the 255 objects in that solution that are not left and top only. The other common values, `0x10000000` (left only, 138 objects) and `0xD0000000` (left, right, bottom, 23 objects), follow from the same bits but were not compared against an Inspector.
 
 ## Traps
 
