@@ -6,8 +6,9 @@ Strips the verbose Save-As-XML layout format (2000+ lines) down to a compact
 JSON representation (~100-300 lines) containing only design-relevant data:
 object types, positions, field bindings, styles, button wiring, and portal config.
 
-Binary data (icons, images), hash attributes, numeric option bitfields, and
-deeply nested formatting blocks are stripped. SVG icon data is replaced with
+Binary data (icons, images), hash attributes, and deeply nested formatting
+blocks are stripped. The object flags bit field is decoded into anchor, slide,
+and flags keys (only when not the default). SVG icon data is replaced with
 a reference note.
 
 Usage:
@@ -30,6 +31,48 @@ from pathlib import Path
 def get_agent_root():
     """Return the absolute path to the agent/ directory."""
     return Path(__file__).resolve().parent.parent
+
+
+# The <Options> element that follows <Bounds> on a LayoutObject is a bit field.
+# A set anchor bit means the object IS anchored to that edge: an object shown in
+# the Inspector as anchored left+top+right exports as 0x70000000. Almost every
+# object is 0x30000000 (left+top), FileMaker's default, so the default is omitted.
+# See agent/docs/knowledge/layout-object-flags.md for how each bit was checked.
+_ANCHOR_BITS = (
+    ("left", 0x10000000),
+    ("top", 0x20000000),
+    ("right", 0x40000000),
+    ("bottom", 0x80000000),
+)
+_DEFAULT_ANCHOR = ["left", "top"]
+_SLIDE_BITS = (("up", 0x10), ("left", 0x20))
+_OBJECT_FLAG_BITS = (("locked", 0x2), ("noPrintImage", 0x200), ("handCursor", 0x10000))
+
+
+def parse_object_flags(obj_el):
+    """Decode the object flags bit field into anchor / slide / flags keys.
+
+    Returns only what differs from the default (anchored left+top, nothing else),
+    so a plain object adds nothing to the summary. Bits with an XML counterpart
+    (hide condition, conditional formatting, tooltip) are not repeated here; the
+    summary already carries those from their own elements.
+    """
+    opts = obj_el.find("Options")
+    if opts is None or not (opts.text or "").strip().isdigit():
+        return {}
+    value = int(opts.text)
+
+    result = {}
+    anchor = [name for name, bit in _ANCHOR_BITS if value & bit]
+    if anchor != _DEFAULT_ANCHOR:
+        result["anchor"] = anchor
+    slide = [name for name, bit in _SLIDE_BITS if value & bit]
+    if slide:
+        result["slide"] = slide
+    flags = [name for name, bit in _OBJECT_FLAG_BITS if value & bit]
+    if flags:
+        result["flags"] = flags
+    return result
 
 
 def parse_bounds(obj_el):
@@ -523,6 +566,8 @@ def parse_layout_object(obj_el):
     bounds = parse_bounds(obj_el)
     if bounds:
         summary["bounds"] = bounds
+
+    summary.update(parse_object_flags(obj_el))
 
     # Style — may be a string (class only) or dict (class + displayName + visuals)
     style = parse_style(obj_el)
