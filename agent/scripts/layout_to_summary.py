@@ -380,6 +380,9 @@ def parse_button_bar(obj_el):
     return result
 
 
+_ALWAYS_TRUE = {"1", "1=1"}
+
+
 def parse_conditions(obj_el):
     """Extract conditional visibility/formatting info (compact)."""
     conds = obj_el.find("Conditions")
@@ -394,6 +397,10 @@ def parse_conditions(obj_el):
         calc = hide.find(".//Text")
         if calc is not None and calc.text:
             result["hideWhen"] = calc.text.strip()
+            # A hide calculation that is always true means the object never shows
+            # (retired or developer-only). "1=1" is a second spelling of "1".
+            if "".join(result["hideWhen"].split()) in _ALWAYS_TRUE:
+                result["hideAlways"] = True
         find_mode = hide.get("findMode")
         if find_mode == "True":
             result["hideInFind"] = True
