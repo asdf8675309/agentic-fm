@@ -88,6 +88,36 @@ def parse_bounds(obj_el):
     ]
 
 
+# The <Options> inside <Field> (not the one after <Bounds>) is the field-entry bit
+# field. 0x4 and 0x10 are inverse flags: set means entry is NOT allowed in that mode.
+# The bits for Tab, Return/Enter, and the Find-mode placeholder are documented in
+# agent/docs/knowledge/layout-object-flags.md but not emitted, since they are inferred.
+_FIELD_NO_BROWSE_ENTRY = 0x4
+_FIELD_NO_FIND_ENTRY = 0x10
+_FIELD_SELECT_ON_ENTRY = 0x2
+
+
+def parse_field_entry(field_el):
+    """Decode field entry behaviour from a <Field> element's <Options>.
+
+    Returns only what differs from the default (entry allowed in Browse and Find
+    mode, contents not selected on entry).
+    """
+    opts = field_el.find("Options")
+    if opts is None or not (opts.text or "").strip().isdigit():
+        return {}
+    value = int(opts.text)
+
+    result = {}
+    if value & _FIELD_NO_BROWSE_ENTRY:
+        result["browseEntry"] = False
+    if value & _FIELD_NO_FIND_ENTRY:
+        result["findEntry"] = False
+    if value & _FIELD_SELECT_ON_ENTRY:
+        result["selectOnEntry"] = True
+    return result
+
+
 def parse_field(obj_el):
     """Extract field binding info: 'TO::FieldName'."""
     field = obj_el.find("Field")
@@ -102,6 +132,7 @@ def parse_field(obj_el):
     to_name = to_ref.get("name", "") if to_ref is not None else ""
 
     result = {"field": f"{to_name}::{field_name}", "fieldId": int(field_id) if field_id else 0}
+    result.update(parse_field_entry(field))
 
     # Display style
     display = field.find("Display")

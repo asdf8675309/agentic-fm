@@ -62,3 +62,49 @@ def test_portal_inner_options_is_not_read_as_object_flags():
 def test_flags_reach_the_object_summary():
     summary = parse_layout_object(obj(0x70000000))
     assert summary["anchor"] == ["left", "top", "right"]
+
+
+# ── field entry (the <Options> inside <Field>) ────────────────────────────────
+
+from layout_to_summary import parse_field, parse_field_entry
+
+
+def field(options=None):
+    opts = "" if options is None else f"<Options>{options}</Options>"
+    return ET.fromstring(
+        '<Field><FieldReference id="1" name="F"><TableOccurrenceReference name="T"/>'
+        f"</FieldReference>{opts}</Field>"
+    )
+
+
+def test_default_field_entry_adds_nothing():
+    # 0x80E0: tab, return, enter, placeholder in Find mode; entry allowed in both modes
+    assert parse_field_entry(field(0x80E0)) == {}
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (0x80E2, {"selectOnEntry": True}),
+        (0x80F0, {"findEntry": False}),
+        (0x80E4, {"browseEntry": False}),
+        (0x80F4, {"browseEntry": False, "findEntry": False}),
+        (0x80F2, {"findEntry": False, "selectOnEntry": True}),
+    ],
+)
+def test_field_entry_bits(value, expected):
+    assert parse_field_entry(field(value)) == expected
+
+
+@pytest.mark.parametrize("element", [field(None), field("x"), field("")])
+def test_field_without_readable_options_is_ignored(element):
+    assert parse_field_entry(element) == {}
+
+
+def test_field_entry_reaches_the_field_summary():
+    element = ET.fromstring(
+        '<LayoutObject type="Edit Box"><Bounds top="0" left="0" bottom="1" right="1"/>'
+        '<Field><FieldReference id="1" name="F"><TableOccurrenceReference name="T"/>'
+        "</FieldReference><Options>32948</Options></Field></LayoutObject>"
+    )
+    assert parse_field(element)["findEntry"] is False
