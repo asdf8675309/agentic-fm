@@ -22,6 +22,7 @@ Output is written to agent/context/{solution}/layouts/ when using --solution mod
 import argparse
 import json
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -676,6 +677,16 @@ def parse_layout(xml_path):
     return summary
 
 
+def summary_filename(layout_name, layout_id):
+    """File name for a layout's summary JSON.
+
+    A layout name can hold path separators ("Description/Notes"); used as-is that
+    names a missing subdirectory and aborts the whole run part-way through.
+    """
+    safe_layout = re.sub(r'[\\/:*?"<>|]', "_", layout_name)
+    return f"{safe_layout} - ID {layout_id}.json"
+
+
 def find_layout_files(solution_dir, layout_name=None):
     """Find layout XML files for a solution. Returns list of Path objects."""
     files = []
@@ -760,7 +771,7 @@ def main():
         summary = parse_layout(xml_path)
         layout_name = summary.get("layout", "unknown")
         layout_id = summary.get("id", 0)
-        safe_name = f"{layout_name} - ID {layout_id}.json"
+        safe_name = summary_filename(layout_name, layout_id)
         out_path = output_dir / safe_name
 
         output = json.dumps(summary, indent=indent, ensure_ascii=False)
