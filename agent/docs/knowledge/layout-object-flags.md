@@ -42,6 +42,28 @@ These bits have no XML counterpart to check against, so they are decoded from th
 
 Four anchor values were compared against the Inspector, one object each: `0x70000000` (left, top, right), `0x90000000` (left, bottom), `0xB0000000` (left, top, bottom), and `0xF0000000` (all four). All four match the "set means anchored" reading and contradict the "don't anchor" reading. Together they cover 90 of the 255 objects in that solution that are not left and top only. The other common values, `0x10000000` (left only, 138 objects) and `0xD0000000` (left, right, bottom, 23 objects), follow from the same bits but were not compared against an Inspector.
 
+## Field entry flags (the `<Options>` inside `<Field>`)
+
+An Edit Box or similar object also has a second `<Options>`, inside its `<Field>` element. It holds the Data tab's field entry settings. `layout_to_summary.py` decodes three of its bits.
+
+| Bit | Meaning | Emitted as |
+|-----|---------|------------|
+| `0x0002` | select entire contents on entry | `selectOnEntry: true` |
+| `0x0004` | field entry **not** allowed in Browse mode | `browseEntry: false` |
+| `0x0010` | field entry **not** allowed in Find mode | `findEntry: false` |
+
+`0x4` and `0x10` are inverse flags: a set bit turns the behaviour off. The default (nothing emitted) is entry allowed in both modes and contents not selected.
+
+Nine objects were compared against the Inspector, with all six field entry boxes read on each. The decoder output matched every box on the eight objects that could be located in the summaries, and the ninth matches by value. The seven fields that a user could not enter in Find mode all carry `0x10` (10 of 10 objects), and none of the objects checked as allowed in Find mode carries it.
+
+Three more bits are inferred, not emitted:
+
+- `0x0040` and `0x0080` are Return and Enter going to the next object. They are set together on every object where both were ticked and on no object where neither was. Which is which is not confirmed. The one object in the checked solution that has only `0x80` is on a copy layout that is not in use.
+- `0x0020` is Tab going to the next object. It is set on all nine objects and on 96% of 6,033 field objects, which fits Tab being FileMaker's default.
+- `0x8000` is Show placeholder in Find mode. It is set on all nine objects, all of which had it ticked, and on 45% of the corpus.
+
+`0x0100` was set on the one object that had Show vertical scroll bar always ticked. One object is not enough to name the bit.
+
 ## Traps
 
 - **Same element name, different meaning.** A `<Portal>` has its own inner `<Options show="…">`, and a `<Field>` uses `<Options>` for its number format. Only the `<Options>` that is a direct child of the `LayoutObject` holds these flags.
