@@ -13,7 +13,7 @@ Every `LayoutObject` in a Save a Copy as XML export carries an `<Options>` eleme
 
 `0x30000000` is left + top, which is FileMaker's default anchoring. About 98% of the objects in a 15,716-object solution carry it.
 
-**Do not read the left and top bits as "don't anchor".** That reading makes the default object anchored to no edge, and it is wrong. Two objects in the same solution were compared against the Inspector. A wide text object shown anchored left, top, and right exports as `0x70000000`, and the "don't anchor" reading would say right only. An edit box shown anchored left and bottom exports as `0x90000000`, and that reading would say bottom only.
+**Do not read the left and top bits as "don't anchor".** That reading makes the default object anchored to no edge, and it is wrong. Three objects in the same solution were compared against the Inspector. A wide text object shown anchored left, top, and right exports as `0x70000000`, and the "don't anchor" reading would say right only. An edit box shown anchored left and bottom exports as `0x90000000`, and that reading would say bottom only. A tab control shown anchored on all four edges exports as `0xF0000000`, and that reading would say right and bottom.
 
 Common values:
 
@@ -22,7 +22,7 @@ Common values:
 | `0x30000000` | left, top | almost everything |
 | `0x70000000` | left, top, right | wide text, toolbars (confirmed in the Inspector) |
 | `0xB0000000` | left, top, bottom | portals, tab controls, panels that grow with the window |
-| `0xF0000000` | all four | tab controls and panels that fill the window |
+| `0xF0000000` | all four | tab controls and panels that fill the window (confirmed in the Inspector) |
 | `0x90000000` | left, bottom | an edit box pinned to the bottom-left (confirmed in the Inspector) |
 
 ## Other bits
@@ -40,7 +40,7 @@ These bits have no XML counterpart to check against, so they are decoded from th
 
 ## How much of this was checked in FileMaker
 
-Two anchor values were compared against the Inspector: `0x70000000` (left, top, right) and `0x90000000` (left, bottom). Both match the "set means anchored" reading and contradict the "don't anchor" reading. The other values follow from the same bits and from where they appear (bottom on portals and tab controls, which stretch with the window), but `0xB0000000` and `0xF0000000` have not been compared against an Inspector. Do that for one object of each before relying on them.
+Three anchor values were compared against the Inspector: `0x70000000` (left, top, right), `0x90000000` (left, bottom), and `0xF0000000` (all four). All three match the "set means anchored" reading and contradict the "don't anchor" reading. `0xB0000000` (left, top, bottom) follows from the same bits and from where it appears (portals and tab controls that stretch with the window), but it has not been compared against an Inspector. Do that for one object before relying on it.
 
 ## Traps
 
